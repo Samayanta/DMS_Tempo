@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ArrowRight, Building2, ShoppingBag, Users } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 import Header from "./layout/Header";
 import Footer from "./layout/Footer";
@@ -16,16 +17,49 @@ const Home: React.FC = () => {
   const [contactValue, setContactValue] = useState("");
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
-  const handleLoginSubmit = (data: any) => {
-    console.log("Login submitted:", data);
-    // Redirect to the login page for Supabase authentication
-    window.location.href = "/login";
+  const navigate = useNavigate();
+  const { signIn, signUp } = useAuth();
+
+  const handleLoginSubmit = async (data: any) => {
+    try {
+      const { error, data: session } = await signIn(data.identifier, data.password);
+      if (error) {
+        console.error("Login error:", error.message);
+        // You might want to show an error message to the user here
+        return;
+      }
+      
+      // Check user role and redirect accordingly
+      const userRole = session?.user?.app_metadata?.role;
+      if (userRole === 'admin') {
+        navigate('/admin/dashboard');
+      } else if (userRole === 'retailer') {
+        navigate('/retailer-dashboard');
+      }
+    } catch (err) {
+      console.error("Login failed:", err);
+    }
   };
 
-  const handleRegistrationSubmit = (data: any) => {
-    console.log("Registration submitted:", data);
-    // Redirect to the registration page for Supabase authentication
-    window.location.href = "/register";
+  const handleRegistrationSubmit = async (data: any) => {
+    try {
+      const { error, data: result } = await signUp(
+        data.identifier,
+        data.password,
+        data.businessName
+      );
+      
+      if (error) {
+        console.error("Registration error:", error.message);
+        // You might want to show an error message to the user here
+        return;
+      }
+
+      // After successful registration, show verification modal for email
+      handleVerifyEmail(data.identifier);
+    } catch (err) {
+      console.error("Registration failed:", err);
+    }
   };
 
   const handleVerifyEmail = (email: string) => {
