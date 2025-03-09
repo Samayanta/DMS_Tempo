@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Trash2, ShoppingCart, CreditCard, ArrowRight } from "lucide-react";
 import Header from "@/components/layout/Header";
@@ -17,41 +17,63 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
 
+// Define cart item type
+interface CartItem {
+  id: number;
+  name: string;
+  price: number;
+  quantity: number;
+  image: string;
+}
+
 const Cart: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Mock cart items
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      name: "Premium Widget",
-      price: 29.99,
-      quantity: 2,
-      image:
-        "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&q=80",
-    },
-    {
-      id: 2,
-      name: "Deluxe Gadget",
-      price: 49.99,
-      quantity: 1,
-      image:
-        "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=300&q=80",
-    },
-    {
-      id: 3,
-      name: "Standard Tool",
-      price: 19.99,
-      quantity: 3,
-      image:
-        "https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=300&q=80",
-    },
-  ]);
-
+  // Mock cart items with localStorage persistence
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [couponCode, setCouponCode] = useState("");
   const [discount, setDiscount] = useState(0);
+
+  // Load cart from localStorage on component mount
+  useEffect(() => {
+    const savedCart = localStorage.getItem("cart");
+    if (savedCart) {
+      try {
+        setCartItems(JSON.parse(savedCart));
+      } catch (error) {
+        console.error("Failed to parse cart from localStorage", error);
+      }
+    } else {
+      // Initialize with mock data if no saved cart
+      const initialCart = [
+        {
+          id: 1,
+          name: "Premium Widget",
+          price: 29.99,
+          quantity: 2,
+          image:
+            "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&q=80",
+        },
+        {
+          id: 2,
+          name: "Deluxe Gadget",
+          price: 49.99,
+          quantity: 1,
+          image:
+            "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=300&q=80",
+        },
+      ];
+      setCartItems(initialCart);
+      localStorage.setItem("cart", JSON.stringify(initialCart));
+    }
+  }, []);
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(cartItems));
+  }, [cartItems]);
 
   const handleQuantityChange = (id: number, newQuantity: number) => {
     if (newQuantity < 1) return;
@@ -61,6 +83,11 @@ const Cart: React.FC = () => {
         item.id === id ? { ...item, quantity: newQuantity } : item,
       ),
     );
+
+    toast({
+      title: "Cart updated",
+      description: "Item quantity has been updated.",
+    });
   };
 
   const handleRemoveItem = (id: number) => {
@@ -79,6 +106,12 @@ const Cart: React.FC = () => {
       toast({
         title: "Coupon applied",
         description: "10% discount has been applied to your order.",
+      });
+    } else if (couponCode.toUpperCase() === "DISCOUNT20") {
+      setDiscount(20);
+      toast({
+        title: "Coupon applied",
+        description: "20% discount has been applied to your order.",
       });
     } else {
       setDiscount(0);
@@ -99,8 +132,29 @@ const Cart: React.FC = () => {
   const total = subtotal - discountAmount + tax;
 
   const handleCheckout = () => {
-    // In a real app, this would save the cart to the backend
+    // Save order details to localStorage for checkout page
+    localStorage.setItem(
+      "currentOrder",
+      JSON.stringify({
+        items: cartItems,
+        subtotal,
+        discount,
+        discountAmount,
+        tax,
+        total,
+      }),
+    );
     navigate("/checkout");
+  };
+
+  const handleClearCart = () => {
+    setCartItems([]);
+    setDiscount(0);
+    setCouponCode("");
+    toast({
+      title: "Cart cleared",
+      description: "All items have been removed from your cart.",
+    });
   };
 
   if (!user) {
@@ -193,7 +247,7 @@ const Cart: React.FC = () => {
                     >
                       Continue Shopping
                     </Button>
-                    <Button onClick={() => setCartItems([])}>Clear Cart</Button>
+                    <Button onClick={handleClearCart}>Clear Cart</Button>
                   </CardFooter>
                 </Card>
               </div>

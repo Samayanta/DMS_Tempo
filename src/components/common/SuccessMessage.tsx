@@ -18,14 +18,14 @@ interface SuccessMessageProps {
   onViewStatus?: () => void;
 }
 
-const SuccessMessage: React.FC<SuccessMessageProps> = ({
+const SuccessMessage = ({
   title = "Registration Submitted Successfully",
   message = "Your retailer registration has been submitted for review. Our team will verify your information and get back to you soon.",
   submissionDate = new Date().toLocaleDateString(),
   estimatedTime = "24-48 hours",
   onClose = () => {},
   onViewStatus = () => {},
-}) => {
+}: SuccessMessageProps) => {
   return (
     <div className="w-full max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
       <Card className="border-none shadow-none">

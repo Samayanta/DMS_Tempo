@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Users,
@@ -45,84 +45,162 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/use-toast";
+
+interface Retailer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  type: string;
+  status: "pending" | "approved" | "rejected";
+  registrationDate: string;
+  lastOrderDate: string | null;
+  totalOrders: number;
+  totalSpent: number;
+}
 
 const RetailerManagement: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-  const [selectedRetailer, setSelectedRetailer] = useState<any>(null);
+  const [selectedRetailer, setSelectedRetailer] = useState<Retailer | null>(
+    null,
+  );
+  const [retailers, setRetailers] = useState<Retailer[]>([]);
 
-  // Mock retailers data
-  const retailers = [
-    {
-      id: "RET-1001",
-      name: "City Supermarket",
-      email: "contact@citysupermarket.com",
-      phone: "+1 (555) 123-4567",
-      address: "123 Main St, Cityville, CA 12345",
-      type: "retail",
-      status: "approved",
-      registrationDate: "2023-01-15",
-      lastOrderDate: "2023-06-01",
-      totalOrders: 42,
-      totalSpent: 28750.5,
-    },
-    {
-      id: "RET-1002",
-      name: "Metro Groceries",
-      email: "info@metrogroceries.com",
-      phone: "+1 (555) 987-6543",
-      address: "456 Broad Ave, Metroville, NY 54321",
-      type: "wholesale",
-      status: "approved",
-      registrationDate: "2023-02-20",
-      lastOrderDate: "2023-06-03",
-      totalOrders: 36,
-      totalSpent: 42150.75,
-    },
-    {
-      id: "RET-1003",
-      name: "Family Mart",
-      email: "support@familymart.com",
-      phone: "+1 (555) 456-7890",
-      address: "789 Oak Rd, Familytown, TX 67890",
-      type: "retail",
-      status: "pending",
-      registrationDate: "2023-06-04",
-      lastOrderDate: null,
-      totalOrders: 0,
-      totalSpent: 0,
-    },
-    {
-      id: "RET-1004",
-      name: "Wholesale Depot",
-      email: "sales@wholesaledepot.com",
-      phone: "+1 (555) 234-5678",
-      address: "101 Warehouse Blvd, Depotville, IL 13579",
-      type: "distribution",
-      status: "approved",
-      registrationDate: "2023-03-10",
-      lastOrderDate: "2023-05-28",
-      totalOrders: 28,
-      totalSpent: 67890.25,
-    },
-    {
-      id: "RET-1005",
-      name: "Corner Shop",
-      email: "hello@cornershop.com",
-      phone: "+1 (555) 876-5432",
-      address: "202 Corner St, Shopville, WA 24680",
-      type: "retail",
-      status: "rejected",
-      registrationDate: "2023-05-30",
-      lastOrderDate: null,
-      totalOrders: 0,
-      totalSpent: 0,
-    },
-  ];
+  // Load retailers from localStorage or initialize with mock data
+  useEffect(() => {
+    const savedRetailers = localStorage.getItem("retailers");
+    if (savedRetailers) {
+      try {
+        setRetailers(JSON.parse(savedRetailers));
+      } catch (error) {
+        console.error("Failed to parse retailers from localStorage", error);
+        initializeWithMockData();
+      }
+    } else {
+      initializeWithMockData();
+    }
+  }, []);
+
+  // Save retailers to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("retailers", JSON.stringify(retailers));
+  }, [retailers]);
+
+  // Initialize with mock data
+  const initializeWithMockData = () => {
+    const mockRetailers: Retailer[] = [
+      {
+        id: "RET-1001",
+        name: "City Supermarket",
+        email: "contact@citysupermarket.com",
+        phone: "+1 (555) 123-4567",
+        address: "123 Main St, Cityville, CA 12345",
+        type: "retail",
+        status: "approved",
+        registrationDate: "2023-01-15",
+        lastOrderDate: "2023-06-01",
+        totalOrders: 42,
+        totalSpent: 28750.5,
+      },
+      {
+        id: "RET-1002",
+        name: "Metro Groceries",
+        email: "info@metrogroceries.com",
+        phone: "+1 (555) 987-6543",
+        address: "456 Broad Ave, Metroville, NY 54321",
+        type: "wholesale",
+        status: "approved",
+        registrationDate: "2023-02-20",
+        lastOrderDate: "2023-06-03",
+        totalOrders: 36,
+        totalSpent: 42150.75,
+      },
+      {
+        id: "RET-1003",
+        name: "Family Mart",
+        email: "support@familymart.com",
+        phone: "+1 (555) 456-7890",
+        address: "789 Oak Rd, Familytown, TX 67890",
+        type: "retail",
+        status: "pending",
+        registrationDate: "2023-06-04",
+        lastOrderDate: null,
+        totalOrders: 0,
+        totalSpent: 0,
+      },
+      {
+        id: "RET-1004",
+        name: "Wholesale Depot",
+        email: "sales@wholesaledepot.com",
+        phone: "+1 (555) 234-5678",
+        address: "101 Warehouse Blvd, Depotville, IL 13579",
+        type: "distribution",
+        status: "approved",
+        registrationDate: "2023-03-10",
+        lastOrderDate: "2023-05-28",
+        totalOrders: 28,
+        totalSpent: 67890.25,
+      },
+      {
+        id: "RET-1005",
+        name: "Corner Shop",
+        email: "hello@cornershop.com",
+        phone: "+1 (555) 876-5432",
+        address: "202 Corner St, Shopville, WA 24680",
+        type: "retail",
+        status: "rejected",
+        registrationDate: "2023-05-30",
+        lastOrderDate: null,
+        totalOrders: 0,
+        totalSpent: 0,
+      },
+    ];
+
+    // Check for registered users and add them as retailers
+    try {
+      const registeredUsers = localStorage.getItem("registeredUsers");
+      if (registeredUsers) {
+        const users = JSON.parse(registeredUsers);
+        Object.values(users).forEach((user: any) => {
+          if (user.app_metadata?.role === "retailer") {
+            const newRetailer: Retailer = {
+              id: `RET-${Math.floor(1000 + Math.random() * 9000)}`,
+              name: user.user_metadata?.businessName || "New Business",
+              email: user.email,
+              phone: user.phone || "+1 (555) 000-0000",
+              address: "Address not provided",
+              type: "retail",
+              status: user.user_metadata?.status || "pending",
+              registrationDate: new Date(user.created_at)
+                .toISOString()
+                .split("T")[0],
+              lastOrderDate: null,
+              totalOrders: 0,
+              totalSpent: 0,
+            };
+
+            // Only add if not already in the list
+            if (!mockRetailers.some((r) => r.email === user.email)) {
+              mockRetailers.push(newRetailer);
+            }
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error loading registered users:", error);
+    }
+
+    setRetailers(mockRetailers);
+    localStorage.setItem("retailers", JSON.stringify(mockRetailers));
+  };
 
   // Filter retailers based on search query and filters
   const filteredRetailers = retailers.filter((retailer) => {
@@ -173,25 +251,99 @@ const RetailerManagement: React.FC = () => {
     }
   };
 
-  const handleViewDetails = (retailer: any) => {
+  const handleViewDetails = (retailer: Retailer) => {
     setSelectedRetailer(retailer);
     setShowDetailsDialog(true);
   };
 
   const handleApproveRetailer = (retailerId: string) => {
-    // In a real app, this would call an API to approve the retailer
-    console.log(`Approving retailer ${retailerId}`);
-    // Then update the UI
+    setRetailers(
+      retailers.map((retailer) =>
+        retailer.id === retailerId
+          ? { ...retailer, status: "approved" }
+          : retailer,
+      ),
+    );
+
+    // Also update in registeredUsers if it exists there
+    try {
+      const registeredUsers = localStorage.getItem("registeredUsers");
+      if (registeredUsers) {
+        const users = JSON.parse(registeredUsers);
+        const retailer = retailers.find((r) => r.id === retailerId);
+
+        if (retailer) {
+          Object.keys(users).forEach((email) => {
+            if (users[email].email === retailer.email) {
+              users[email].user_metadata.status = "approved";
+            }
+          });
+
+          localStorage.setItem("registeredUsers", JSON.stringify(users));
+        }
+      }
+    } catch (error) {
+      console.error("Error updating registered user status:", error);
+    }
+
+    toast({
+      title: "Retailer approved",
+      description: "The retailer has been approved successfully.",
+    });
+
+    // Close dialog if the approved retailer is the selected one
+    if (selectedRetailer?.id === retailerId) {
+      setSelectedRetailer((prev) =>
+        prev ? { ...prev, status: "approved" } : null,
+      );
+    }
   };
 
   const handleRejectRetailer = (retailerId: string) => {
-    // In a real app, this would call an API to reject the retailer
-    console.log(`Rejecting retailer ${retailerId}`);
-    // Then update the UI
+    setRetailers(
+      retailers.map((retailer) =>
+        retailer.id === retailerId
+          ? { ...retailer, status: "rejected" }
+          : retailer,
+      ),
+    );
+
+    // Also update in registeredUsers if it exists there
+    try {
+      const registeredUsers = localStorage.getItem("registeredUsers");
+      if (registeredUsers) {
+        const users = JSON.parse(registeredUsers);
+        const retailer = retailers.find((r) => r.id === retailerId);
+
+        if (retailer) {
+          Object.keys(users).forEach((email) => {
+            if (users[email].email === retailer.email) {
+              users[email].user_metadata.status = "rejected";
+            }
+          });
+
+          localStorage.setItem("registeredUsers", JSON.stringify(users));
+        }
+      }
+    } catch (error) {
+      console.error("Error updating registered user status:", error);
+    }
+
+    toast({
+      title: "Retailer rejected",
+      description: "The retailer has been rejected.",
+    });
+
+    // Close dialog if the rejected retailer is the selected one
+    if (selectedRetailer?.id === retailerId) {
+      setSelectedRetailer((prev) =>
+        prev ? { ...prev, status: "rejected" } : null,
+      );
+    }
   };
 
   // Check if user is admin (in a real app, this would be based on user role)
-  const isAdmin = true; // Mock admin check
+  const isAdmin = user?.app_metadata?.role === "admin";
 
   if (!user || !isAdmin) {
     navigate("/login");
@@ -434,12 +586,226 @@ const RetailerManagement: React.FC = () => {
                 )}
               </TabsContent>
 
-              {/* Other tab contents would be similar but filtered */}
+              {/* Pending tab - show only pending retailers */}
               <TabsContent value="pending" className="space-y-4">
-                {/* Similar content but filtered for pending retailers */}
+                {filteredRetailers.filter((r) => r.status === "pending")
+                  .length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50 text-left">
+                          <th className="px-4 py-3 text-sm font-medium text-gray-500">
+                            ID
+                          </th>
+                          <th className="px-4 py-3 text-sm font-medium text-gray-500">
+                            Retailer
+                          </th>
+                          <th className="px-4 py-3 text-sm font-medium text-gray-500">
+                            Type
+                          </th>
+                          <th className="px-4 py-3 text-sm font-medium text-gray-500">
+                            Registration Date
+                          </th>
+                          <th className="px-4 py-3 text-sm font-medium text-gray-500">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {filteredRetailers
+                          .filter((r) => r.status === "pending")
+                          .map((retailer) => (
+                            <tr key={retailer.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-4 text-sm font-medium text-gray-900">
+                                {retailer.id}
+                              </td>
+                              <td className="px-4 py-4">
+                                <div>
+                                  <div className="font-medium">
+                                    {retailer.name}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {retailer.email}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-4 text-sm capitalize">
+                                {retailer.type}
+                              </td>
+                              <td className="px-4 py-4 text-sm">
+                                {retailer.registrationDate}
+                              </td>
+                              <td className="px-4 py-4 text-sm">
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleViewDetails(retailer)}
+                                  >
+                                    View
+                                  </Button>
+                                  <div className="flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-red-500 border-red-200 hover:bg-red-50"
+                                      onClick={() =>
+                                        handleRejectRetailer(retailer.id)
+                                      }
+                                    >
+                                      Reject
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      className="bg-green-600 hover:bg-green-700"
+                                      onClick={() =>
+                                        handleApproveRetailer(retailer.id)
+                                      }
+                                    >
+                                      Approve
+                                    </Button>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <CheckCircle className="h-12 w-12 mx-auto text-green-500 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-1">
+                      No pending applications
+                    </h3>
+                    <p className="text-gray-500">
+                      All retailer applications have been processed.
+                    </p>
+                  </div>
+                )}
               </TabsContent>
+
+              {/* Active tab - show only approved retailers */}
               <TabsContent value="active" className="space-y-4">
-                {/* Similar content but filtered for active retailers */}
+                {filteredRetailers.filter((r) => r.status === "approved")
+                  .length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50 text-left">
+                          <th className="px-4 py-3 text-sm font-medium text-gray-500">
+                            ID
+                          </th>
+                          <th className="px-4 py-3 text-sm font-medium text-gray-500">
+                            Retailer
+                          </th>
+                          <th className="px-4 py-3 text-sm font-medium text-gray-500">
+                            Type
+                          </th>
+                          <th className="px-4 py-3 text-sm font-medium text-gray-500">
+                            Orders
+                          </th>
+                          <th className="px-4 py-3 text-sm font-medium text-gray-500">
+                            Total Spent
+                          </th>
+                          <th className="px-4 py-3 text-sm font-medium text-gray-500">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {filteredRetailers
+                          .filter((r) => r.status === "approved")
+                          .map((retailer) => (
+                            <tr key={retailer.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-4 text-sm font-medium text-gray-900">
+                                {retailer.id}
+                              </td>
+                              <td className="px-4 py-4">
+                                <div>
+                                  <div className="font-medium">
+                                    {retailer.name}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {retailer.email}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-4 text-sm capitalize">
+                                {retailer.type}
+                              </td>
+                              <td className="px-4 py-4 text-sm">
+                                {retailer.totalOrders}
+                              </td>
+                              <td className="px-4 py-4 text-sm">
+                                ${retailer.totalSpent.toFixed(2)}
+                              </td>
+                              <td className="px-4 py-4 text-sm">
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleViewDetails(retailer)}
+                                  >
+                                    View
+                                  </Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          navigate(
+                                            `/admin/retailers/${retailer.id}/orders`,
+                                          )
+                                        }
+                                      >
+                                        View Orders
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          navigate(
+                                            `/admin/retailers/${retailer.id}/edit`,
+                                          )
+                                        }
+                                      >
+                                        Edit Details
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        className="text-red-500"
+                                        onClick={() =>
+                                          handleRejectRetailer(retailer.id)
+                                        }
+                                      >
+                                        Suspend Account
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-1">
+                      No active retailers
+                    </h3>
+                    <p className="text-gray-500">
+                      There are no approved retailers at the moment.
+                    </p>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>

@@ -44,6 +44,13 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleForgotPassword = () => {
+    toast({
+      title: "Password Reset",
+      description: "Password reset functionality will be implemented soon.",
+    });
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Header />
@@ -66,6 +73,7 @@ const Login: React.FC = () => {
           <AuthenticationCard
             defaultTab="login"
             onLoginSubmit={handleLoginSubmit}
+            onForgotPassword={handleForgotPassword}
             isLoading={isLoading}
           />
         </div>

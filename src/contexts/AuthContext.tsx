@@ -19,6 +19,7 @@ type AuthContextType = {
   signUp: (
     email: string,
     password: string,
+    businessName?: string,
   ) => Promise<{
     error: Error | null;
     data: { user: User | null; session: Session | null };
@@ -28,7 +29,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users for development with a way to store registered users
+// Mock users for development
 const mockUsers = {
   retailer: {
     id: "retailer-user-id",
@@ -81,7 +82,8 @@ const createMockSession = (user: any) => ({
   user,
 });
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+// Use a default export for the component to fix Fast Refresh
+function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
@@ -91,12 +93,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading auth state
-    const timer = setTimeout(() => {
+    // Check for existing session in localStorage
+    try {
+      const savedSession = localStorage.getItem("userSession");
+      if (savedSession) {
+        const parsedSession = JSON.parse(savedSession);
+        setSession(parsedSession as unknown as Session);
+        setUser(parsedSession.user as unknown as User);
+        setUserRole(parsedSession.user.app_metadata.role as UserRole);
+        setRetailerStatus(parsedSession.user.user_metadata.status || null);
+      }
+    } catch (error) {
+      console.error("Error restoring session:", error);
+    } finally {
       setLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
+    }
   }, []);
 
   const signIn = async (identifier: string, password: string) => {
@@ -112,6 +123,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(adminSession as unknown as Session);
       setUserRole("admin");
       setRetailerStatus(null);
+
+      // Save session to localStorage
+      localStorage.setItem("userSession", JSON.stringify(adminSession));
 
       return { data: adminSession as unknown as Session, error: null };
     }
@@ -129,6 +143,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserRole("retailer");
       setRetailerStatus(retailerUser.user_metadata.status);
 
+      // Save session to localStorage
+      localStorage.setItem("userSession", JSON.stringify(retailerSession));
+
       return { data: retailerSession as unknown as Session, error: null };
     }
 
@@ -143,6 +160,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(userSession as unknown as Session);
       setUserRole("retailer");
       setRetailerStatus(registeredUser.user_metadata.status);
+
+      // Save session to localStorage
+      localStorage.setItem("userSession", JSON.stringify(userSession));
 
       return { data: userSession as unknown as Session, error: null };
     }
@@ -161,7 +181,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   ) => {
     // Check if email is already registered
     const registeredUsers = loadRegisteredUsers();
-    if (registeredUsers[email]) {
+    if (
+      registeredUsers[email] ||
+      email === mockUsers.admin.email ||
+      email === mockUsers.retailer.email
+    ) {
       return {
         data: { user: null, session: null },
         error: new Error("Email already registered") as Error,
@@ -193,6 +217,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserRole("retailer");
       setRetailerStatus("pending");
 
+      // Save session to localStorage
+      localStorage.setItem("userSession", JSON.stringify(newRetailerSession));
+
       return {
         data: {
           user: newRetailerUser as unknown as User,
@@ -215,6 +242,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
     setUserRole(null);
     setRetailerStatus(null);
+
+    // Clear session from localStorage
+    localStorage.removeItem("userSession");
   };
 
   const value = {
@@ -231,10 +261,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() {
+function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }
+
+export { useAuth };
+export default AuthProvider;
